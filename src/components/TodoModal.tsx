@@ -28,7 +28,7 @@ const TodoModal = ({ setTodoModalOpen, setTodos }: Props) => {
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-black/75">
       <div className="space-y-4 rounded-lg bg-white p-3 ">
-        <h3 className="text-xl font-semibold">Name of task</h3>
+        <h3 className="text-xl font-semibold">Add Task</h3>
         <input
           type="text"
           onChange={handleChange}

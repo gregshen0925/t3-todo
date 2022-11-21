@@ -35,4 +35,18 @@ export const taskRouter = router({
       });
       return todo;
     }),
+  finishedTask: publicProcedure
+    .input(z.object({ id: z.string(), checked: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const { id, checked } = input;
+      const todo = await ctx.prisma.task.update({
+        where: {
+          id,
+        },
+        data: {
+          checked,
+        },
+      });
+      return todo;
+    }),
 });

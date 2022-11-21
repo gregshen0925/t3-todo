@@ -4,22 +4,39 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import TodoModal from "../components/TodoModal";
 import { HiX } from "react-icons/hi";
+import { motion } from "framer-motion";
 
 import { trpc } from "../utils/trpc";
 
 const Home: NextPage = () => {
   const [todos, setTodos] = useState<Task[]>([]);
   const [todoModalOpen, setTodoModalOpen] = useState<boolean>(false);
-
+  const [finishedTasks, setFinishedTasks] = useState<Task[]>([]);
   const { data: tasks, isLoading, isError } = trpc.task.getAll.useQuery();
   const { mutate: deleteTask } = trpc.task.deleteTask.useMutation({
     onSuccess(task) {
       setTodos((prev) => prev.filter((todo) => todo.id !== task.id));
     },
   });
+  const { mutate: finishesTask } = trpc.task.finishedTask.useMutation({
+    onSuccess(task) {
+      // check if this item is already finished
+      if (finishedTasks.some((todo) => todo.id === task.id)) {
+        // remove it from the finished list
+        setFinishedTasks((prev) => prev.filter((todo) => todo.id !== task.id));
+      } else {
+        // add it to the finished list
+        setFinishedTasks((prev) => [...prev, task]);
+      }
+    },
+  });
 
   useEffect(() => {
-    if (!isError && tasks) setTodos(tasks);
+    if (!isError && tasks) {
+      setTodos(tasks);
+      const finished = tasks.filter((task) => task.checked);
+      setFinishedTasks(finished);
+    }
   }, [isError, tasks]);
 
   const handleModalOpen = () => {
@@ -39,33 +56,66 @@ const Home: NextPage = () => {
       {todoModalOpen ? (
         <TodoModal setTodoModalOpen={setTodoModalOpen} setTodos={setTodos} />
       ) : null}
+      <div className="bg-black">
+        <main className="mx-auto min-h-screen max-w-3xl  px-4 text-white">
+          <div className="">
+            <div className="flex justify-between pt-12 ">
+              <h2 className="text-2xl font-semibold">Greg Todo List</h2>
+              <button
+                onClick={handleModalOpen}
+                className="rounded-xl bg-violet-500 p-2 text-sm text-white transition hover:bg-violet-600"
+              >
+                Add task
+              </button>
+            </div>
 
-      <main className="mx-auto my-12 max-w-3xl">
-        <div className="flex justify-between">
-          <h2 className="text-2xl font-semibold">My Todo List</h2>
-          <button
-            onClick={handleModalOpen}
-            className="rounded-xl bg-violet-500 p-2 text-sm text-white transition hover:bg-violet-600"
-          >
-            Add task
-          </button>
-        </div>
-
-        <ul className="mt-4">
-          {todos.map((task) => {
-            const { id, name } = task;
-            return (
-              <li key={id} className="flex items-center justify-between">
-                <span>{name}</span>
-                <HiX
-                  onClick={() => deleteTask({ id })}
-                  className="text-lg text-red-500"
-                />
-              </li>
-            );
-          })}
-        </ul>
-      </main>
+            <ul className="mt-4">
+              {todos.map((task) => {
+                const { id, name } = task;
+                return (
+                  <li
+                    key={id}
+                    className="flex w-full items-center justify-between"
+                  >
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-0 flex origin-left items-center justify-center">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{
+                            width: finishedTasks.some((task) => task.id === id)
+                              ? "100%"
+                              : 0,
+                          }}
+                          transition={{ duration: 0.2, ease: "easeInOut" }}
+                          className="h-[2px] w-full translate-y-px bg-red-500"
+                        />
+                      </div>
+                      <span
+                        onClick={() =>
+                          finishesTask({
+                            id,
+                            checked: finishedTasks.some(
+                              (task) => task.id === id
+                            )
+                              ? false
+                              : true,
+                          })
+                        }
+                      >
+                        {name}
+                      </span>
+                    </div>
+                    <HiX
+                      onClick={() => deleteTask({ id })}
+                      className="cursor-pointer text-lg text-red-500"
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </main>
+      </div>
     </>
   );
 };
