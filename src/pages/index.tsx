@@ -2,7 +2,8 @@ import { Task } from "@prisma/client";
 import { type NextPage } from "next";
 import Head from "next/head";
 import { useEffect, useState } from "react";
-import TodoModal from "../components/todoModal";
+import TodoModal from "../components/TodoModal";
+import { HiX } from "react-icons/hi";
 
 import { trpc } from "../utils/trpc";
 
@@ -11,6 +12,11 @@ const Home: NextPage = () => {
   const [todoModalOpen, setTodoModalOpen] = useState<boolean>(false);
 
   const { data: tasks, isLoading, isError } = trpc.task.getAll.useQuery();
+  const { mutate: deleteTask } = trpc.task.deleteTask.useMutation({
+    onSuccess(task) {
+      setTodos((prev) => prev.filter((todo) => todo.id !== task.id));
+    },
+  });
 
   useEffect(() => {
     if (!isError && tasks) setTodos(tasks);
@@ -46,11 +52,18 @@ const Home: NextPage = () => {
         </div>
 
         <ul className="mt-4">
-          {todos.map((task) => (
-            <li key={task.id} className="flex items-center justify-between">
-              <span>{task.name}</span>
-            </li>
-          ))}
+          {todos.map((task) => {
+            const { id, name } = task;
+            return (
+              <li key={id} className="flex items-center justify-between">
+                <span>{name}</span>
+                <HiX
+                  onClick={() => deleteTask({ id })}
+                  className="text-lg text-red-500"
+                />
+              </li>
+            );
+          })}
         </ul>
       </main>
     </>
